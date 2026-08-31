@@ -1,0 +1,58 @@
+# Week 0 — Research & Prerequisites
+
+## Goal
+Before writing a line of code, make sure we actually understand the problem and
+the tools. This week was about researching the valuation domain, pinning down
+the scope from our proposal, choosing the tech stack, and getting everyone's
+machine and accounts ready so Week 1 is pure building.
+
+## Domain research (DCF valuation)
+- Studied the discounted-cash-flow method end to end: projecting free cash
+  flows, discounting them at the WACC, adding a terminal (perpetuity) value,
+  then going enterprise value → equity value → intrinsic value per share.
+- Learned *why* DCF is sensitive to its inputs — small changes in discount rate
+  or growth swing the result a lot. This is exactly the weakness our tool is
+  meant to expose, and it's why we need the guardrail **terminal growth < WACC**
+  and a WACC × terminal-growth sensitivity view later.
+- Read about scenario analysis (Bull / Base / Bear) as the standard way analysts
+  reason about optimistic vs pessimistic cases — this shapes our "scenario" as
+  the core saveable unit.
+- Worked through a couple of textbook examples by hand so we'll have known
+  reference numbers to unit-test the engine against in Week 2.
+
+## Tooling & prerequisites research
+- **Frontend:** React + Vite + TypeScript + Tailwind — fast dev/HMR, type safety
+  for the model, and utility CSS for the responsive requirement.
+- **Backend:** FastAPI + SQLite — lightweight, built-in validation via Pydantic,
+  easy to run and deploy for a student project.
+- **Finance data API:** compared options (Financial Modeling Prep, Alpha
+  Vantage, etc.) on free-tier limits and data shape. Leaning toward Financial
+  Modeling Prep, with the API key kept server-side. To be confirmed in Month 2.
+- **CI/CD:** GitHub Actions for build + lint on every push; Vercel as the likely
+  staging/production target for the frontend.
+
+## Environment setup (prerequisites, not code)
+- Confirmed prerequisites across all three machines: Node.js, Python 3.12+,
+  Git, and a shared editor setup.
+- Read the getting-started docs for Vite, FastAPI, and Tailwind v4 so nobody is
+  learning the tool for the first time mid-sprint.
+- Verified repo access and looked at how the existing mkdocs docs site is built.
+
+## Team & process
+- Reviewed the proposal together and agreed on the 12-week plan and a rough
+  division of labor (backend/data, frontend/comparison, engine/testing), with
+  everyone touching CI.
+- Committed to the "time-to-value" heuristic: ship a working core early, layer
+  features on top.
+
+## Open questions / risks
+- Final choice of finance API (and its exact response format) — decide before
+  Month 2.
+- The scenario data model is still a draft; we'll finalize and write it down in
+  Week 1.
+- Flagged early: error handling (Week 7) and integration (Week 9) are the most
+  likely weeks to overrun.
+
+## Next (Week 1)
+- Scaffold the repo: React + Vite + TS frontend, FastAPI backend, Tailwind, and
+  CI green on every push. Formally agree and record the scenario data model.
