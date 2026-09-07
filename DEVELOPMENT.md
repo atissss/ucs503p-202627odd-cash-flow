@@ -40,10 +40,10 @@ online”** — the Vite dev server proxies `/api/*` to the backend (see
 
 CI (`.github/workflows/ci.yml`) runs on every push and pull request:
 
-| Stack    | Commands                                    |
-| -------- | ------------------------------------------- |
-| frontend | `npm run lint` · `npm run build`            |
-| backend  | `ruff check .` · `pytest -q`                |
+| Stack    | Commands                                        |
+| -------- | ------------------------------------------------ |
+| frontend | `npm run lint` · `npm run test` · `npm run build` |
+| backend  | `ruff check .` · `pytest -q`                      |
 
 Run them locally before pushing so CI stays green.
 

@@ -1,3 +1,7 @@
+## Node (root-level; frontend/ has its own .gitignore)
+## ----------------------------------------------------
+node_modules/
+
 ## Python.gitignore
 ## ----------------------------------------------------
 
