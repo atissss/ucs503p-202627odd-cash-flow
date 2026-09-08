@@ -1,0 +1,139 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1300 1080" font-family="'Helvetica Neue', Arial, sans-serif">
+  <defs>
+    <marker id="dep" markerWidth="14" markerHeight="14" refX="10" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M1,1 L10,5 L1,9" fill="none" stroke="#444" stroke-width="1.4"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1300" height="1080" fill="#ffffff"/>
+
+  <!-- Title -->
+  <text x="650" y="50" text-anchor="middle" font-size="30" font-weight="700" fill="#111">Intrinsic — Use Case Diagram</text>
+  <text x="650" y="82" text-anchor="middle" font-size="17" fill="#555">DCF Valuation &amp; Scenario-Analysis Platform</text>
+
+  <!-- System boundary -->
+  <rect x="290" y="115" width="710" height="925" rx="4" fill="none" stroke="#333" stroke-width="2"/>
+  <text x="645" y="148" text-anchor="middle" font-size="18" font-weight="700" fill="#333">Intrinsic Platform</text>
+
+  <!-- ===================== ACTORS ===================== -->
+  <!-- Registered User -->
+  <g stroke="#1a1a1a" stroke-width="1.8" fill="none">
+    <circle cx="135" cy="345" r="15" fill="#fff"/>
+    <line x1="135" y1="360" x2="135" y2="400"/>
+    <line x1="113" y1="375" x2="157" y2="375"/>
+    <line x1="135" y1="400" x2="117" y2="430"/>
+    <line x1="135" y1="400" x2="153" y2="430"/>
+  </g>
+  <text x="135" y="455" text-anchor="middle" font-size="14" fill="#111">Registered User</text>
+
+  <!-- User -->
+  <g stroke="#1a1a1a" stroke-width="1.8" fill="none">
+    <circle cx="135" cy="795" r="15" fill="#fff"/>
+    <line x1="135" y1="810" x2="135" y2="850"/>
+    <line x1="113" y1="825" x2="157" y2="825"/>
+    <line x1="135" y1="850" x2="117" y2="880"/>
+    <line x1="135" y1="850" x2="153" y2="880"/>
+  </g>
+  <text x="135" y="905" text-anchor="middle" font-size="14" fill="#111">User</text>
+
+  <!-- Generalization: Registered User to User -->
+  <line x1="135" y1="478" x2="135" y2="760" stroke="#1a1a1a" stroke-width="1.8"/>
+  <polygon points="135,776 126,758 144,758" fill="#fff" stroke="#1a1a1a" stroke-width="1.8"/>
+
+  <!-- Financial Data API (external / secondary actor) -->
+  <g stroke="#1a1a1a" stroke-width="1.8" fill="none">
+    <circle cx="1170" cy="720" r="15" fill="#fff"/>
+    <line x1="1170" y1="735" x2="1170" y2="775"/>
+    <line x1="1148" y1="750" x2="1192" y2="750"/>
+    <line x1="1170" y1="775" x2="1152" y2="805"/>
+    <line x1="1170" y1="775" x2="1188" y2="805"/>
+  </g>
+  <text x="1170" y="695" text-anchor="middle" font-size="12" fill="#777" font-style="italic">&lt;&lt;external system&gt;&gt;</text>
+  <text x="1170" y="830" text-anchor="middle" font-size="14" fill="#111">Financial Data API</text>
+
+  <!-- ===================== ASSOCIATIONS ===================== -->
+  <g stroke="#333" stroke-width="1.5">
+    <!-- Registered User -> account use cases -->
+    <line x1="152" y1="360" x2="439" y2="205"/>
+    <line x1="152" y1="360" x2="439" y2="315"/>
+    <line x1="152" y1="360" x2="439" y2="425"/>
+    <line x1="152" y1="360" x2="439" y2="535"/>
+    <!-- User -> valuation use cases -->
+    <line x1="152" y1="806" x2="439" y2="645"/>
+    <line x1="152" y1="806" x2="439" y2="755"/>
+    <line x1="152" y1="806" x2="439" y2="865"/>
+    <line x1="152" y1="806" x2="439" y2="975"/>
+    <!-- Financial Data API -> Fetch -->
+    <line x1="1158" y1="752" x2="651" y2="755"/>
+  </g>
+
+  <!-- ===================== USE CASES ===================== -->
+  <g fill="#fff" stroke="#1a1a1a" stroke-width="1.8">
+    <ellipse cx="545" cy="205" rx="106" ry="36"/>
+    <ellipse cx="545" cy="315" rx="106" ry="36"/>
+    <ellipse cx="545" cy="425" rx="106" ry="36"/>
+    <ellipse cx="545" cy="535" rx="106" ry="36"/>
+    <ellipse cx="545" cy="645" rx="106" ry="36"/>
+    <ellipse cx="545" cy="755" rx="106" ry="36"/>
+    <ellipse cx="545" cy="865" rx="106" ry="36"/>
+    <ellipse cx="545" cy="975" rx="106" ry="36"/>
+    <ellipse cx="855" cy="205" rx="106" ry="36"/>
+    <ellipse cx="855" cy="700" rx="106" ry="36"/>
+    <ellipse cx="855" cy="820" rx="106" ry="36"/>
+  </g>
+
+  <g fill="#7a1220" font-size="15" text-anchor="middle">
+    <text x="545" y="210">Log in</text>
+    <text x="545" y="320">Save scenario</text>
+    <text x="545" y="425"><tspan x="545" dy="-4">Load / delete</tspan><tspan x="545" dy="19">scenario</tspan></text>
+    <text x="545" y="540">Compare scenarios</text>
+    <text x="545" y="650">Enter assumptions</text>
+    <text x="545" y="755"><tspan x="545" dy="-4">Fetch company</tspan><tspan x="545" dy="19">data by ticker</tspan></text>
+    <text x="545" y="865"><tspan x="545" dy="-4">Compute</tspan><tspan x="545" dy="19">intrinsic value</tspan></text>
+    <text x="545" y="975"><tspan x="545" dy="-4">Analyze</tspan><tspan x="545" dy="19">sensitivity</tspan></text>
+    <text x="855" y="210">Reset password</text>
+    <text x="855" y="700"><tspan x="855" dy="-4">Validate</tspan><tspan x="855" dy="19">financial data</tspan></text>
+    <text x="855" y="820"><tspan x="855" dy="-4">Fall back to</tspan><tspan x="855" dy="19">manual entry</tspan></text>
+  </g>
+
+  <!-- ===================== INCLUDE / EXTEND ===================== -->
+  <g stroke="#444" stroke-width="1.4" stroke-dasharray="6 5" fill="none">
+    <!-- Reset password ..extends..> Log in -->
+    <line x1="749" y1="205" x2="653" y2="205" marker-end="url(#dep)"/>
+    <!-- Save scenario ..includes..> Log in -->
+    <line x1="560" y1="279" x2="560" y2="243" marker-end="url(#dep)"/>
+    <!-- Compare scenarios ..includes..> Load / delete scenario -->
+    <line x1="560" y1="499" x2="560" y2="463" marker-end="url(#dep)"/>
+    <!-- Fetch ..includes..> Validate financial data -->
+    <line x1="646" y1="742" x2="754" y2="710" marker-end="url(#dep)"/>
+    <!-- Fall back to manual entry ..extends..> Fetch -->
+    <line x1="752" y1="806" x2="650" y2="770" marker-end="url(#dep)"/>
+  </g>
+
+  <g font-size="12" fill="#555" font-style="italic">
+    <text x="701" y="196" text-anchor="middle">&lt;&lt;extends&gt;&gt;</text>
+    <text x="598" y="266" text-anchor="start">&lt;&lt;includes&gt;&gt;</text>
+    <text x="598" y="486" text-anchor="start">&lt;&lt;includes&gt;&gt;</text>
+    <text x="672" y="706" text-anchor="start">&lt;&lt;includes&gt;&gt;</text>
+    <text x="690" y="812" text-anchor="start">&lt;&lt;extends&gt;&gt;</text>
+  </g>
+
+  <!-- ===================== LEGEND ===================== -->
+  <g>
+    <rect x="1012" y="150" width="276" height="210" rx="6" fill="#fafafa" stroke="#ccc"/>
+    <text x="1150" y="180" text-anchor="middle" font-size="15" font-weight="700" fill="#333">Legend</text>
+
+    <line x1="1028" y1="212" x2="1082" y2="212" stroke="#333" stroke-width="1.6"/>
+    <text x="1094" y="216" font-size="13" fill="#333">Association</text>
+
+    <line x1="1028" y1="250" x2="1076" y2="250" stroke="#444" stroke-width="1.4" stroke-dasharray="6 5" marker-end="url(#dep)"/>
+    <text x="1094" y="254" font-size="13" fill="#333">&lt;&lt;include&gt;&gt; / &lt;&lt;extend&gt;&gt;</text>
+
+    <line x1="1028" y1="288" x2="1066" y2="288" stroke="#1a1a1a" stroke-width="1.6"/>
+    <polygon points="1082,288 1066,280 1066,296" fill="#fff" stroke="#1a1a1a" stroke-width="1.6"/>
+    <text x="1094" y="292" font-size="13" fill="#333">Generalization</text>
+
+    <text x="1028" y="326" font-size="12" fill="#777">Actors drawn as stick figures.</text>
+    <text x="1028" y="346" font-size="12" fill="#777">Ovals = use cases; box = system.</text>
+  </g>
+</svg>
