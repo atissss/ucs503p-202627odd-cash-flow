@@ -10,7 +10,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 # Status conventions (see the TS contract for the authoritative descriptions).
 ScenarioKind = Literal["bull", "base", "bear", "custom"]
@@ -61,6 +61,57 @@ class Scenario(BaseModel):
     valuation: ValuationOutput | None = None
     created_at: datetime
     updated_at: datetime
+
+
+class ScenarioCreate(BaseModel):
+    """Payload to create a scenario (server assigns id/timestamps).
+
+    Mirrors the TS `NewScenario` = Pick<Scenario, 'name' | 'kind' |
+    'dataStatus' | 'ticker' | 'assumptions' | 'valuation'>.
+    """
+
+    name: str
+    kind: ScenarioKind
+    data_status: DataStatus
+    ticker: str | None = None
+    assumptions: Assumptions
+    valuation: ValuationOutput | None = None
+
+    @model_validator(mode="after")
+    def _check_assumption_guardrails(self) -> ScenarioCreate:
+        _validate_assumption_guardrails(self.assumptions)
+        return self
+
+
+class ScenarioUpdate(BaseModel):
+    """Full replacement of a scenario's editable fields (PUT semantics)."""
+
+    name: str
+    kind: ScenarioKind
+    data_status: DataStatus
+    ticker: str | None = None
+    assumptions: Assumptions
+    valuation: ValuationOutput | None = None
+
+    @model_validator(mode="after")
+    def _check_assumption_guardrails(self) -> ScenarioUpdate:
+        _validate_assumption_guardrails(self.assumptions)
+        return self
+
+
+def _validate_assumption_guardrails(assumptions: Assumptions) -> None:
+    """Reject economically nonsensical assumptions.
+
+    The terminal (perpetuity) value diverges unless the terminal growth rate is
+    strictly below the discount rate, so `terminalGrowth < wacc` is a hard
+    domain guardrail. Raising `ValueError` inside a Pydantic validator surfaces
+    as a 422 on the API.
+    """
+    if assumptions.terminal_growth >= assumptions.wacc:
+        raise ValueError(
+            "terminal_growth must be strictly less than wacc "
+            f"(got terminal_growth={assumptions.terminal_growth}, wacc={assumptions.wacc})"
+        )
 
 
 class HealthResponse(BaseModel):

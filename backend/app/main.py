@@ -1,42 +1,50 @@
 """Intrinsic API entrypoint.
 
-Week 1 is a skeleton: a health endpoint and CORS wired up so the frontend can
-talk to it. The scenario CRUD endpoints and the finance-data integration land
-in Month 2 (weeks 5–8).
+Wires up CORS, creates the database tables on startup, and mounts the health
+check plus the scenario CRUD router. Configuration comes from `app.config`.
 """
 
 from __future__ import annotations
 
-import os
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from . import __version__
+from .config import get_settings
+from .db import create_db_and_tables
 from .models import HealthResponse
+from .routers import scenarios
+
+settings = get_settings()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Create any missing tables before the app starts serving requests.
+    create_db_and_tables()
+    yield
+
 
 app = FastAPI(
     title="Intrinsic API",
     version=__version__,
     summary="DCF valuation and scenario storage for the Intrinsic platform.",
+    lifespan=lifespan,
 )
 
 # During local dev the Vite server proxies `/api` to this service, but allow the
 # dev origins directly too so the frontend can also call the API cross-origin.
-_default_origins = "http://localhost:5173,http://127.0.0.1:5173"
-_origins = [
-    o.strip()
-    for o in os.getenv("INTRINSIC_CORS_ORIGINS", _default_origins).split(",")
-    if o.strip()
-]
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=_origins,
+    allow_origins=settings.cors_origin_list,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(scenarios.router)
 
 
 @app.get("/health", response_model=HealthResponse, tags=["health"])
