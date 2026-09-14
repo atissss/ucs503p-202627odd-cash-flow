@@ -1,42 +1,67 @@
 """Intrinsic API entrypoint.
 
-Week 1 is a skeleton: a health endpoint and CORS wired up so the frontend can
-talk to it. The scenario CRUD endpoints and the finance-data integration land
-in Month 2 (weeks 5–8).
+Wires together the app: CORS, request logging, a consistent error envelope,
+database startup, and the auth router. Scenario CRUD (Person 1) and the
+finance-data integration land later.
 """
 
-from __future__ import annotations
+import logging
+import time
+from contextlib import asynccontextmanager
 
-import os
-
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from . import __version__
+from .auth.router import router as auth_router
+from .config import settings
+from .db import init_db
+from .errors import register_exception_handlers
 from .models import HealthResponse
+
+logger = logging.getLogger("intrinsic")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_db()
+    yield
+
 
 app = FastAPI(
     title="Intrinsic API",
     version=__version__,
     summary="DCF valuation and scenario storage for the Intrinsic platform.",
+    lifespan=lifespan,
 )
-
-# During local dev the Vite server proxies `/api` to this service, but allow the
-# dev origins directly too so the frontend can also call the API cross-origin.
-_default_origins = "http://localhost:5173,http://127.0.0.1:5173"
-_origins = [
-    o.strip()
-    for o in os.getenv("INTRINSIC_CORS_ORIGINS", _default_origins).split(",")
-    if o.strip()
-]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=_origins,
+    allow_origins=settings.cors_origin_list,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+register_exception_handlers(app)
+
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    start = time.perf_counter()
+    response = await call_next(request)
+    elapsed_ms = (time.perf_counter() - start) * 1000
+    logger.info(
+        "%s %s -> %s (%.1f ms)",
+        request.method,
+        request.url.path,
+        response.status_code,
+        elapsed_ms,
+    )
+    return response
+
+
+app.include_router(auth_router)
 
 
 @app.get("/health", response_model=HealthResponse, tags=["health"])
