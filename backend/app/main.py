@@ -18,6 +18,7 @@ from .config import settings
 from .db import init_db
 from .errors import register_exception_handlers
 from .models import HealthResponse
+from .scenarios.router import router as scenarios_router
 
 logger = logging.getLogger("intrinsic")
 
@@ -62,6 +63,7 @@ async def log_requests(request: Request, call_next):
 
 
 app.include_router(auth_router)
+app.include_router(scenarios_router)
 
 
 @app.get("/health", response_model=HealthResponse, tags=["health"])

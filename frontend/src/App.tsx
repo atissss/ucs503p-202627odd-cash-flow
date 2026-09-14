@@ -1,5 +1,11 @@
-import { useEffect, useState } from 'react'
-import { DEFAULT_ASSUMPTIONS } from './domain/scenario'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { listScenarios } from './api/scenarios'
+import { AssumptionsForm } from './components/AssumptionsForm'
+import { ComparisonView } from './components/ComparisonView'
+import { ResultsView } from './components/ResultsView'
+import { ScenarioManager } from './components/ScenarioManager'
+import { runDCF } from './domain/runDCF'
+import { DEFAULT_ASSUMPTIONS, type Assumptions, type Scenario } from './domain/scenario'
 
 type BackendState = 'checking' | 'online' | 'offline'
 
@@ -32,7 +38,18 @@ const HEALTH_DOT: Record<BackendState, string> = {
 
 function App() {
   const backend = useBackendHealth()
-  const a = DEFAULT_ASSUMPTIONS
+  const [assumptions, setAssumptions] = useState<Assumptions>(DEFAULT_ASSUMPTIONS)
+  const valuation = useMemo(() => runDCF(assumptions), [assumptions])
+
+  const [scenarios, setScenarios] = useState<Scenario[]>([])
+  const refreshScenarios = useCallback(() => {
+    listScenarios()
+      .then(setScenarios)
+      .catch(() => setScenarios([]))
+  }, [])
+  useEffect(() => {
+    refreshScenarios()
+  }, [refreshScenarios])
 
   return (
     <div className="flex min-h-full flex-col">
@@ -68,24 +85,56 @@ function App() {
         <section className="rounded-xl border border-ink-800 bg-ink-900/60 p-6">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-medium tracking-wide text-ink-400 uppercase">
-              Scenario workspace
+              Assumptions
             </h2>
             <span className="rounded-full border border-brand-600/40 bg-brand-600/10 px-2.5 py-0.5 text-xs text-brand-400">
-              Week 1 · scaffolding
+              Week 3 · valuation
             </span>
           </div>
           <p className="mt-3 text-sm text-ink-400">
-            The valuation engine lands in Week 2. For now, this is the agreed
-            input model it will consume:
+            Every change recomputes the valuation below, live.
           </p>
-          <dl className="mt-5 grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3">
-            <Field label="Base free cash flow" value={`${a.baseFreeCashFlow} (${a.currency}m)`} />
-            <Field label="Growth rate" value={pct(a.growthRate)} />
-            <Field label="WACC" value={pct(a.wacc)} />
-            <Field label="Terminal growth" value={pct(a.terminalGrowth)} />
-            <Field label="Projection years" value={String(a.projectionYears)} />
-            <Field label="Shares outstanding" value={String(a.sharesOutstanding)} />
-          </dl>
+          <div className="mt-5">
+            <AssumptionsForm assumptions={assumptions} onChange={setAssumptions} />
+          </div>
+        </section>
+
+        <section className="rounded-xl border border-ink-800 bg-ink-900/60 p-6">
+          <h2 className="text-sm font-medium tracking-wide text-ink-400 uppercase">Valuation</h2>
+          <div className="mt-5">
+            <ResultsView valuation={valuation} currency={assumptions.currency} />
+          </div>
+        </section>
+
+        <section className="rounded-xl border border-ink-800 bg-ink-900/60 p-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-medium tracking-wide text-ink-400 uppercase">Scenarios</h2>
+            <span className="rounded-full border border-brand-600/40 bg-brand-600/10 px-2.5 py-0.5 text-xs text-brand-400">
+              saved to backend
+            </span>
+          </div>
+          <p className="mt-3 text-sm text-ink-400">
+            Save this valuation as a named case (Bull / Base / Bear), then load or delete it later.
+          </p>
+          <div className="mt-5">
+            <ScenarioManager
+              assumptions={assumptions}
+              valuation={valuation}
+              scenarios={scenarios}
+              onChanged={refreshScenarios}
+              onLoad={setAssumptions}
+            />
+          </div>
+        </section>
+
+        <section className="rounded-xl border border-ink-800 bg-ink-900/60 p-6">
+          <h2 className="text-sm font-medium tracking-wide text-ink-400 uppercase">Comparison</h2>
+          <p className="mt-3 text-sm text-ink-400">
+            Bull vs Base vs Bear — assumptions and intrinsic value per share, side by side.
+          </p>
+          <div className="mt-5">
+            <ComparisonView scenarios={scenarios} currency={assumptions.currency} />
+          </div>
         </section>
       </main>
 
@@ -96,19 +145,6 @@ function App() {
       </footer>
     </div>
   )
-}
-
-function Field({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <dt className="text-xs text-ink-400">{label}</dt>
-      <dd className="mt-0.5 text-sm text-ink-200 tabular-nums">{value}</dd>
-    </div>
-  )
-}
-
-function pct(decimal: number): string {
-  return `${(decimal * 100).toFixed(1)}%`
 }
 
 export default App
