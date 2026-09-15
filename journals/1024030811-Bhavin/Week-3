@@ -1,0 +1,48 @@
+
+# Week 5 — Backend, Database & User Accounts
+
+**Date:** 2026-09-15
+**Author:** Bhavin Bhatti (1024030811)
+**Milestone:** Month 2 · backend persistence + auth
+
+## Goal
+Stand up the real backend: a database, user accounts, and the foundation the
+scenario storage plugs into — so the app stops being frontend-only.
+
+## What I did
+- Built the DB foundation (SQLModel + SQLite): engine, a `get_session`
+  dependency, config via `pydantic-settings`, and table creation on startup.
+- Implemented the **auth slice**: a `User` table, bcrypt password hashing, JWT
+  login, and a `get_current_user` dependency — with register / login / me
+  endpoints.
+- Added cross-cutting pieces: a consistent error envelope and request logging.
+- Wrote tests (register/login/me, bad password, unauthorised access) and kept
+  ruff + pytest green in CI.
+
+## Decisions
+- Kept the DCF math on the frontend; the backend **stores** the client-computed
+  valuation rather than recomputing (option (a)).
+- Tokens signed with a secret from the environment; `.env` is gitignored and
+  never committed.
+- Auth and scenario storage were built in parallel on separate branches with a
+  stubbed `get_current_user` as the agreed seam.
+
+## Problems & fixes
+- Bhoomi and I independently built the shared foundation (config/db/main), so
+  the two branches conflicted. I **reconciled them** into one backend: one auth
+  package, `User.id` as a string UUID to match `owner_id`, unified
+  db/main/config/conftest, merged dependencies.
+- Fixed lint issues (deprecated typing, FastAPI `Depends` in defaults).
+
+## Verification
+- ruff clean; all backend tests pass (auth + scenarios together).
+- Smoke-tested the real flow: no token → 401; register → login → token →
+  create/list scenarios scoped to that user.
+
+## Next
+- Wire the frontend login screen so the app uses the auth-gated backend.
+- Promote `owner_id` to a real foreign key; then the sensitivity grid and the
+  live finance-data API.
+```
+
+Want me to **write this to `journals/1024030811-Bhavin/week-05.md`** (and on which branch)? Given the file layout, I'd suggest putting it on `integration/backend` alongside the reconciliation, or on a fresh branch — your call. I won't commit or push unless you say so.
