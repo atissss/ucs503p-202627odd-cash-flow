@@ -1,8 +1,4 @@
-**No — I didn't.** Bhavin's journals in the repo stop at `week-01.md` and `week-02.md` (the scaffolding and DCF/UI period). There's **no entry** covering the Person 2 work — the user accounts / JWT auth / DB foundation, or this week's reconciliation of the two backends. (Also: Bhoomi's folder still has no entries, and Aatish's `w0`/`w1` exist only on some branches — but those aren't mine to write.)
 
-Person 2 is you (Bhavin), so here's a draft entry for that work. I've labelled it Week 5 (the plan's "backend + database" slot) — rename to whatever week it actually was:
-
-```markdown
 # Week 5 — Backend, Database & User Accounts
 
 **Date:** 2026-09-15
