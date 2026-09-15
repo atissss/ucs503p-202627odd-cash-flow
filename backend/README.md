@@ -1,8 +1,10 @@
 # Intrinsic — Backend (FastAPI)
 
-The API service for the Intrinsic DCF platform: SQLite persistence, user accounts
-with JWT auth, and a consistent error envelope. Scenario CRUD and the finance-data
-API integration land on top of this foundation.
+The API service for the Intrinsic DCF platform. It provides **user accounts**
+(JWT auth) and stores **scenarios** (a named set of DCF assumptions plus the
+client-computed valuation) in SQLite, **scoped per user**. The DCF math runs on
+the frontend; the backend *stores* the valuation it receives and does not
+recompute it. All errors share one envelope: `{"error": {"code", "message"}}`.
 
 ## Run locally
 
@@ -18,49 +20,57 @@ uvicorn app.main:app --reload      # serves on http://localhost:8000
 Check it: <http://localhost:8000/api/health> → `{"status":"ok",...}`.
 Interactive docs: <http://localhost:8000/docs>.
 
-The Vite dev server proxies `/api/*` to this service, so with both running the
-frontend's "Backend online" indicator turns green.
-
 ## Configuration
 
-Settings load from the environment / `.env` (prefix `INTRINSIC_`, see
-`.env.example`): `SECRET_KEY`, `DATABASE_URL`, `CORS_ORIGINS`,
-`ACCESS_TOKEN_EXPIRE_MINUTES`. **Never commit `.env`** (it is gitignored).
+Settings load from the environment (prefix `INTRINSIC_`) and an optional `.env`
+(never committed — see `.env.example`): `SECRET_KEY`, `DATABASE_URL`,
+`CORS_ORIGINS`, `JWT_ALGORITHM`, `ACCESS_TOKEN_EXPIRE_MINUTES`. Tables are
+created on startup; scenarios persist across restarts.
 
-## Auth endpoints
+## Endpoints
 
-| Method | Path                 | Body                 | Returns                       |
-| ------ | -------------------- | -------------------- | ----------------------------- |
-| POST   | `/api/auth/register` | `{email, password}`  | `201` user (id, email, …)     |
-| POST   | `/api/auth/login`    | `{email, password}`  | `200` `{access_token, ...}`   |
-| GET    | `/api/auth/me`       | — (Bearer token)     | `200` current user            |
+**Auth** — get a token from `/login`, then send `Authorization: Bearer <token>`.
 
-Send the token as `Authorization: Bearer <token>`. Errors use one envelope:
-`{"error": {"code": "...", "message": ...}}` (`http_error`, `validation_error`,
-`internal_error`).
+| Method | Path                 | Body                | Returns                     |
+| ------ | -------------------- | ------------------- | --------------------------- |
+| POST   | `/api/auth/register` | `{email, password}` | `201` user (id, email, …)   |
+| POST   | `/api/auth/login`    | `{email, password}` | `200` `{access_token, ...}` |
+| GET    | `/api/auth/me`       | — (Bearer)          | `200` current user          |
 
-Scenario endpoints depend on `app/auth/deps.py:get_current_user` for the current
-user's `id` (used as `owner_id`).
+**Scenarios** — all scoped to the authenticated user; another user's id yields
+`404` (never revealing the scenario exists). The `terminal_growth < wacc`
+guardrail is enforced server-side (`422`).
+
+| Method   | Path                  | Body             | Success |
+| -------- | --------------------- | ---------------- | ------- |
+| POST     | `/api/scenarios`      | `ScenarioCreate` | `201`   |
+| GET      | `/api/scenarios`      | —                | `200`   |
+| GET      | `/api/scenarios/{id}` | —                | `200`   |
+| PUT      | `/api/scenarios/{id}` | `ScenarioUpdate` | `200`   |
+| DELETE   | `/api/scenarios/{id}` | —                | `204`   |
 
 ## Test & lint
 
 ```bash
-pytest          # smoke tests
+pytest          # auth + scenario (unit + endpoint) tests
 ruff check .    # lint
 ```
 
 ## Layout
 
-| Path                | Purpose                                                   |
-| ------------------- | --------------------------------------------------------- |
-| `app/main.py`       | App wiring: CORS, logging, error handlers, health, routers |
-| `app/config.py`     | Settings (env / `.env`)                                   |
-| `app/db.py`         | SQLModel engine, `get_session`, `init_db`                 |
-| `app/tables.py`     | ORM tables (`User`; `Scenario` added by Person 1)         |
-| `app/errors.py`     | Consistent error-envelope handlers                        |
-| `app/auth/`         | Password hashing, JWT, `get_current_user`, auth endpoints |
-| `app/models.py`     | Pydantic API models — mirror of the frontend's contract   |
-| `tests/`            | pytest (health + auth)                                    |
+| Path                       | Purpose                                                   |
+| -------------------------- | --------------------------------------------------------- |
+| `app/main.py`              | App wiring: CORS, logging, error handlers, startup, routers |
+| `app/config.py`            | Settings (`pydantic-settings`, reads `.env`)              |
+| `app/db.py`                | SQLModel engine, `get_session`, `init_db` (User + Scenario) |
+| `app/errors.py`            | Consistent error-envelope handlers                        |
+| `app/auth/`                | Password hashing, JWT, `get_current_user`, auth endpoints |
+| `app/tables.py`            | `User` table                                              |
+| `app/orm.py`               | `ScenarioTable`                                           |
+| `app/repository.py`        | Scenario DB access (create/get/list/update/delete)        |
+| `app/routers/scenarios.py` | Scenario CRUD endpoints (depend on `app.auth`)            |
+| `app/models.py`            | Pydantic contract + request models — mirror of the TS     |
+| `tests/`                   | pytest (auth + scenarios)                                 |
 
 The Pydantic models in `app/models.py` mirror `frontend/src/domain/scenario.ts`.
 Change both together.

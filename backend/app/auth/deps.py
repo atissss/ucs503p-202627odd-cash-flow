@@ -1,8 +1,12 @@
 """Auth dependency shared across the API.
 
-`get_current_user` is the seam Person 1's scenario endpoints plug into: they
-`Depends(get_current_user)` and use `user.id` as the scenario's `owner_id`.
+`get_current_user` is the seam the scenario endpoints plug into: they
+`Depends(get_current_user)` and use `user.id` (a string) as the scenario's
+`owner_id`. `CurrentUser` is the minimal shape those endpoints rely on — it is
+what test overrides substitute for the real DB-backed user.
 """
+
+from dataclasses import dataclass
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
@@ -21,6 +25,13 @@ _credentials_error = HTTPException(
 )
 
 
+@dataclass(frozen=True)
+class CurrentUser:
+    """Minimal authenticated-user shape the scenario slice reads (`.id`)."""
+
+    id: str
+
+
 def get_current_user(
     token: str = Depends(oauth2_scheme),
     session: Session = Depends(get_session),
@@ -31,11 +42,7 @@ def get_current_user(
     subject = payload.get("sub")
     if subject is None:
         raise _credentials_error
-    try:
-        user_id = int(subject)
-    except (TypeError, ValueError):
-        raise _credentials_error from None
-    user = session.get(User, user_id)
+    user = session.get(User, subject)
     if user is None:
         raise _credentials_error
     return user

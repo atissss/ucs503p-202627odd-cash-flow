@@ -19,8 +19,9 @@ engine = create_engine(settings.database_url, echo=False, connect_args=_connect_
 
 def init_db() -> None:
     """Create tables for every registered SQLModel table model."""
-    # Import for the side effect of registering tables on SQLModel.metadata.
-    from . import tables  # noqa: F401
+    # Import for the side effect of registering tables on SQLModel.metadata:
+    # `tables` holds User, `orm` holds ScenarioTable.
+    from . import orm, tables  # noqa: F401
 
     SQLModel.metadata.create_all(engine)
 
