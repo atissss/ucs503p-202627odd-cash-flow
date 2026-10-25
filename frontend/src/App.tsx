@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import type { AuthUser } from './api/auth'
 import { listScenarios } from './api/scenarios'
+import { useAuth } from './auth/useAuth'
 import { AssumptionsForm } from './components/AssumptionsForm'
 import { ComparisonView } from './components/ComparisonView'
+import { LoginView } from './components/LoginView'
 import { ResultsView } from './components/ResultsView'
 import { ScenarioManager } from './components/ScenarioManager'
 import { runDCF } from './domain/runDCF'
@@ -38,6 +41,32 @@ const HEALTH_DOT: Record<BackendState, string> = {
 
 function App() {
   const backend = useBackendHealth()
+  const { user, ready, login, register, logout } = useAuth()
+
+  if (!ready) {
+    return (
+      <div className="flex min-h-full items-center justify-center text-sm text-ink-400">
+        Loading…
+      </div>
+    )
+  }
+
+  if (!user) {
+    return <LoginView onLogin={login} onRegister={register} />
+  }
+
+  return <Workspace user={user} backend={backend} onLogout={logout} />
+}
+
+function Workspace({
+  user,
+  backend,
+  onLogout,
+}: {
+  user: AuthUser
+  backend: BackendState
+  onLogout: () => void
+}) {
   const [assumptions, setAssumptions] = useState<Assumptions>(DEFAULT_ASSUMPTIONS)
   const valuation = useMemo(() => runDCF(assumptions), [assumptions])
 
@@ -56,16 +85,18 @@ function App() {
       <header className="border-b border-ink-800">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
           <div className="flex items-baseline gap-2">
-            <span className="text-lg font-semibold tracking-tight text-ink-200">
-              Intrinsic
-            </span>
-            <span className="text-sm text-ink-400">
-              DCF Valuation &amp; Scenario Analysis
-            </span>
+            <span className="text-lg font-semibold tracking-tight text-ink-200">Intrinsic</span>
+            <span className="text-sm text-ink-400">DCF Valuation &amp; Scenario Analysis</span>
           </div>
-          <div className="flex items-center gap-2 text-xs text-ink-400">
-            <span className={`h-2 w-2 rounded-full ${HEALTH_DOT[backend]}`} />
-            {HEALTH_LABEL[backend]}
+          <div className="flex items-center gap-4 text-xs text-ink-400">
+            <span className="flex items-center gap-2">
+              <span className={`h-2 w-2 rounded-full ${HEALTH_DOT[backend]}`} />
+              {HEALTH_LABEL[backend]}
+            </span>
+            <span className="hidden sm:inline text-ink-300">{user.email}</span>
+            <button type="button" onClick={onLogout} className="text-brand-400 hover:underline">
+              Log out
+            </button>
           </div>
         </div>
       </header>
@@ -76,9 +107,8 @@ function App() {
             Valuation as an auditable, repeatable workflow.
           </h1>
           <p className="mt-4 text-ink-400">
-            Set your assumptions, compute an intrinsic value per share, and save
-            named scenarios to compare Bull, Base and Bear side by side — not a
-            spreadsheet, and not a black box.
+            Set your assumptions, compute an intrinsic value per share, and save named scenarios
+            to compare Bull, Base and Bear side by side — not a spreadsheet, and not a black box.
           </p>
         </section>
 
@@ -110,7 +140,7 @@ function App() {
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-medium tracking-wide text-ink-400 uppercase">Scenarios</h2>
             <span className="rounded-full border border-brand-600/40 bg-brand-600/10 px-2.5 py-0.5 text-xs text-brand-400">
-              saved to backend
+              your saved cases
             </span>
           </div>
           <p className="mt-3 text-sm text-ink-400">
