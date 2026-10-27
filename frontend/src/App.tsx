@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { SensitivityGrid } from './components/SensitivityGrid'
 import { DEFAULT_ASSUMPTIONS } from './domain/scenario'
 
 type BackendState = 'checking' | 'online' | 'offline'
@@ -86,6 +87,19 @@ function App() {
             <Field label="Projection years" value={String(a.projectionYears)} />
             <Field label="Shares outstanding" value={String(a.sharesOutstanding)} />
           </dl>
+        </section>
+
+        <section className="rounded-xl border border-ink-800 bg-ink-900/60 p-6">
+          <h2 className="text-sm font-medium tracking-wide text-ink-400 uppercase">
+            Sensitivity
+          </h2>
+          <p className="mt-3 text-sm text-ink-400">
+            Intrinsic value per share across WACC and terminal growth, around your
+            current assumptions.
+          </p>
+          <div className="mt-5">
+            <SensitivityGrid assumptions={a} />
+          </div>
         </section>
       </main>
 
