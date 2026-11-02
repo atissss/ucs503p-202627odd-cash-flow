@@ -1,8 +1,7 @@
 """Intrinsic API entrypoint.
 
 Wires together the app: CORS, request logging, a consistent error envelope,
-database startup, and the auth router. Scenario CRUD (Person 1) and the
-finance-data integration land later.
+database startup, and the auth, scenario and financial-data routers.
 """
 
 import logging
@@ -18,6 +17,7 @@ from .config import settings
 from .db import init_db
 from .errors import register_exception_handlers
 from .models import HealthResponse
+from .routers.financials import router as financials_router
 from .routers.scenarios import router as scenarios_router
 
 logger = logging.getLogger("intrinsic")
@@ -64,6 +64,7 @@ async def log_requests(request: Request, call_next):
 
 app.include_router(auth_router)
 app.include_router(scenarios_router)
+app.include_router(financials_router)
 
 
 @app.get("/health", response_model=HealthResponse, tags=["health"])

@@ -24,7 +24,8 @@ Interactive docs: <http://localhost:8000/docs>.
 
 Settings load from the environment (prefix `INTRINSIC_`) and an optional `.env`
 (never committed — see `.env.example`): `SECRET_KEY`, `DATABASE_URL`,
-`CORS_ORIGINS`, `JWT_ALGORITHM`, `ACCESS_TOKEN_EXPIRE_MINUTES`. Tables are
+`CORS_ORIGINS`, `JWT_ALGORITHM`, `ACCESS_TOKEN_EXPIRE_MINUTES`, `FMP_API_KEY`
+(required for ticker lookups; backend only). Tables are
 created on startup; scenarios persist across restarts.
 
 ## Endpoints
@@ -49,10 +50,20 @@ guardrail is enforced server-side (`422`).
 | PUT      | `/api/scenarios/{id}` | `ScenarioUpdate` | `200`   |
 | DELETE   | `/api/scenarios/{id}` | —                | `204`   |
 
+**Financials** — requires a Bearer token. Returns `Assumptions` for a ticker from
+its latest annual Financial Modeling Prep statements, with monetary values and
+shares in millions. Free cash flow, net debt, diluted shares and currency are
+reported figures; `growth_rate`, `wacc`, `terminal_growth` and `projection_years`
+are placeholders for the user to set. Each lookup uses three provider calls.
+
+| Method | Path                     | Success | Errors                                  |
+| ------ | ------------------------ | ------- | --------------------------------------- |
+| GET    | `/api/financials/{ticker}` | `200`   | `404` unknown ticker, `502` provider error |
+
 ## Test & lint
 
 ```bash
-pytest          # auth + scenario (unit + endpoint) tests
+pytest          # auth, scenario and financials tests (no key or network needed)
 ruff check .    # lint
 ```
 
@@ -69,8 +80,10 @@ ruff check .    # lint
 | `app/orm.py`               | `ScenarioTable`                                           |
 | `app/repository.py`        | Scenario DB access (create/get/list/update/delete)        |
 | `app/routers/scenarios.py` | Scenario CRUD endpoints (depend on `app.auth`)            |
+| `app/financials/service.py` | FMP fetch + transform to `Assumptions`                 |
+| `app/routers/financials.py` | Ticker lookup endpoint (depends on `app.auth`)          |
 | `app/models.py`            | Pydantic contract + request models — mirror of the TS     |
-| `tests/`                   | pytest (auth + scenarios)                                 |
+| `tests/`                   | pytest (auth, scenarios, financials)                      |
 
 The Pydantic models in `app/models.py` mirror `frontend/src/domain/scenario.ts`.
 Change both together.
