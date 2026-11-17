@@ -1,0 +1,82 @@
+# Week 4 — Live financial data: fetch + transform by ticker
+# Goal
+Let a user enter a ticker and get `Assumptions` pre-filled from the company's real
+financial statements. The provider is called from the backend only, so the API key
+never reaches the browser. Scope this week: fetch + transform + endpoint + tests.
+Caching, the full validation layer, and the invalid-ticker/network fallback are
+parked for next week.
+
+## Provider check (before coding)
+Confirmed the Financial Modeling Prep (FMP) "stable" endpoints and fields:
+- `GET /stable/cash-flow-statement?symbol=…`: `operatingCashFlow`,
+  `capitalExpenditure` (reported as a negative outflow), `reportedCurrency`, `date`
+- `GET /stable/balance-sheet-statement?symbol=…`: `totalDebt`, `cashAndCashEquivalents`
+- `GET /stable/income-statement?symbol=…`: `weightedAverageShsOutDil` (diluted shares)
+- Each takes `limit=1` (latest annual record). Free tier: 250 calls/day,
+  so one lookup = 3 calls.
+- An unknown ticker comes back as `200` with an empty list `[]`, not a 404.
+
+## What I did
+- **Config:** added `fmp_api_key` (read from `INTRINSIC_FMP_API_KEY`) and
+  `fmp_base_url` to `app/config.py`; added a placeholder key to `backend/.env.example`.
+  The real key lives only in my local, gitignored `.env`.
+- **Transform layer** (`app/financials/service.py`): fetches the latest annual record
+  of each statement with `httpx` and maps it to `Assumptions`:
+  - `base_free_cash_flow` = operating cash flow − capex (latest year)
+  - `net_debt` = total debt − cash and cash equivalents
+  - `shares_outstanding` = diluted weighted-average shares
+  - `currency` = reported currency
+  - `growth_rate`, `wacc`, `terminal_growth`, `projection_years` are **not** taken
+    from the API (they're judgments, not reported data), so they get the same
+    defaults as the frontend's `DEFAULT_ASSUMPTIONS` (8% / 9% / 2.5% / 5 years).
+    The result is a partial-but-valid `Assumptions` that passes `terminal_growth < wacc`.
+- **Endpoint:** `GET /api/financials/{ticker}` (`app/routers/financials.py`, mounted in
+  `app/main.py`), auth-gated with `Depends(get_current_user)` like the scenario routes.
+  Unknown ticker → `404`; provider down / bad response / missing key → `502`.
+  Both use the shared error envelope.
+- **Deps:** moved `httpx` from dev-only to runtime in `requirements.txt` (pinned 0.28.1).
+- **Docs:** endpoint and config added to `backend/README.md`.
+
+## Decisions
+- **Units:** FMP reports absolute values; our shared contract (`scenario.ts`) holds
+  money in **millions**. The transform divides by 1,000,000 and scales shares the
+  same way, so value-per-share still comes out correct.
+- **Capex sign:** FMP reports capex as negative, but I use `abs()` so FCF is
+  OCF − capex whichever sign a record uses.
+- **Diluted shares** rather than basic, because per-share value should account for dilution.
+- **No change to `models.py`:** the endpoint returns the existing `Assumptions`
+  model, so `models.py` and `scenario.ts` stay in agreement.
+- **Thin router:** the handler only authenticates and maps service exceptions
+  (`TickerNotFoundError`, `ProviderError`) to HTTP codes. All provider logic sits in the
+  service, so next week's caching/validation can slot in without touching the route.
+
+## Problems & fixes
+- **API key in the URL:** FMP takes the key as a query parameter, so any logged
+  request URL would expose it. I turned httpx's request logging down to WARNING, and
+  my own log/error messages never include the URL or the raw httpx exception
+  (`raise … from None`). Tests assert the key never shows up in logs or errors.
+- **Units mismatch** (absolute vs millions) would have made valuations a million
+  times off. Caught it while checking the sample AAPL numbers against the contract.
+- **Local Python 3.14** still can't run the pinned stack (same issue as Week 3).
+  CI on Python 3.12 is the source of truth.
+
+## Verification
+- **Tests mock the provider** with `httpx.MockTransport` and a saved sample FMP
+  response (`tests/fixtures/fmp_aapl.json`), so CI needs no key and no network:
+  - Transform test: AAPL sample → FCF 98,767, net debt 76,443, shares 15,004.697
+    (millions), USD, and the default rates.
+  - Requests hit the right three endpoints with `symbol`, `limit=1` and the key.
+  - Capex handled with either sign; empty response → unknown ticker; 401/402/429/500,
+    non-JSON or unexpected bodies → provider error; missing key → no network call.
+  - Endpoint tests (service mocked): `200` with populated assumptions, `404` for an
+    unknown ticker, `502` on provider failure, `401` without a token.
+- `ruff check .` clean · `pytest -q` green on CI for commit `5294a26` (PR #2).
+- Not yet tried against the live FMP API with a real key.
+
+## Next (Week 5)
+- Caching with a TTL to stay under the 250-calls/day free limit.
+- Validation: reject or flag missing, zero, or implausible figures.
+- Fallback: unknown ticker / network failure → clean error codes so the UI drops to
+  manual entry.
+- Agree the exact response JSON with Bhavin before he wires up the UI.
+- One manual check against the live API with a real key.
