@@ -1,0 +1,82 @@
+# Week 3 — Backend persistence: DB foundation + scenarios CRUD
+
+
+**Milestone:** Month 1 · Week 3 — *scenarios persist per user through the API*
+
+## Goal
+Turn the Week 1 backend skeleton into something that actually stores data: a
+shared DB layer for the whole backend, and the full scenarios CRUD slice on top
+of it — every scenario owned by, and scoped to, a user. Land the shared
+foundation first so Person 2 (users/auth) can build on it in parallel.
+
+## What I did
+**Shared foundation (STEP 0):**
+- Added a SQLModel + SQLite layer: an engine, a `get_session` FastAPI
+  dependency, and `create_db_and_tables()` run on app startup (`app/db.py`).
+- Centralised config in `app/config.py` via `pydantic-settings`, reading a
+  local (gitignored) `.env` — DB URL, CORS origins, SECRET_KEY. `main.py` now
+  reads CORS from settings instead of an ad-hoc `os.getenv`.
+- Added a pytest fixture that yields a throwaway in-memory DB (`StaticPool`) plus
+  a `TestClient` with the session + auth dependencies overridden, so tests never
+  touch the real `intrinsic.db` (`tests/conftest.py`).
+- Pinned `sqlmodel` and `pydantic-settings` in `requirements.txt`;
+  added `.env` to `.gitignore` and a `.env.example`.
+
+**Scenarios slice:**
+- `ScenarioTable` ORM mirroring the contract, with an indexed `owner_id` and the
+  nested `assumptions` / `valuation` stored as JSON columns (`app/orm.py`).
+- A repository module (`app/repository.py`) with create / get / list / update /
+  delete — all owner-scoped — keeping DB logic out of the route handlers.
+- The five endpoints (`app/routers/scenarios.py`), all depending on the current
+  user: `POST/GET/GET{id}/PUT{id}/DELETE{id} /api/scenarios`. Missing or
+  not-owned → 404 (identical response, so we never leak another user's data);
+  invalid payloads → 422.
+- Server-side guardrail `terminal_growth < wacc` on create and update
+  (`app/models.py`), rejecting nonsensical assumptions with a 422.
+- Tests: repository unit tests + endpoint tests covering a full
+  create→read→update→delete round-trip and that one user cannot read/modify/delete
+  another user's scenario.
+- Updated `backend/README.md` with the schema, endpoints, and config table.
+
+## Decisions / conventions agreed
+- **Where the math runs:** the backend *stores* the client-computed `valuation`
+  it receives; it does not recompute (option a). `runDCF` stays the single
+  implementation on the frontend.
+- **Auth boundary with Person 2:** endpoints depend on a `get_current_user()`
+  imported from one place (`app/auth.py`). For now it's a clearly-marked
+  temporary stub returning a fixed dev user, so the scenarios slice is testable
+  today and the swap to Person 2's real dependency is a one-line change.
+- **`owner_id` is a logical FK** (indexed column) for now, not a DB-level
+  `ForeignKey`, so table creation doesn't depend on Person 2's `User` table
+  existing yet. TODO in the code to promote it once their slice lands.
+- **JSON columns** for `assumptions`/`valuation`: they're always read/written as
+  a whole, never queried field-by-field, so JSON keeps the round-trip lossless
+  and the schema small.
+
+## Problems & fixes
+- The pinned `pydantic==2.10.4` has no wheel for my local Python 3.14 and failed
+  to build from source. Verified the slice locally against a newer pydantic; the
+  exact pins still resolve cleanly on CI's Python 3.12, which is what matters.
+- `ruff` (rule B008) flagged `Depends(...)` in argument defaults — switched the
+  routes to the `Annotated[..., Depends(...)]` form, which is the modern FastAPI
+  idiom and lint-clean.
+- FastAPI asserts a 204 response must have no body — had `DELETE` return an
+  explicit `Response(status_code=204)`.
+- SQLModel couldn't map the `Literal` status types to columns, so the ORM stores
+  `kind` / `data_status` as plain `str`; the enum is still enforced by the
+  request models before anything reaches the DB.
+
+## Verification
+- `ruff check .` clean · `pytest -q` OK (15/15).
+- Restart test: created a scenario against a file-backed SQLite DB, restarted the
+  process, listed it back — it persisted. Confirms tables are created on startup
+  and scenarios survive restarts.
+- Ownership isolation asserted end to end: user B gets 404 on user A's scenario
+  for read/update/delete and an empty list.
+
+## Next (Week 4)
+- Swap the stub for Person 2's real `get_current_user()` (one import) and promote
+  `owner_id` to a DB-level foreign key to the user table.
+- Decide with the team on the camelCase (TS contract) vs snake_case (API/models)
+  boundary — add an alias layer if the frontend will call these endpoints
+  directly.
