@@ -1,0 +1,41 @@
+{
+  "_source": "Example responses from FMP's stable API docs, trimmed to the identifying and relevant fields.",
+  "cash-flow-statement": [
+    {
+      "date": "2025-09-27",
+      "symbol": "AAPL",
+      "reportedCurrency": "USD",
+      "fiscalYear": "2025",
+      "period": "FY",
+      "netIncome": 112010000000,
+      "operatingCashFlow": 111482000000,
+      "capitalExpenditure": -12715000000,
+      "freeCashFlow": 98767000000
+    }
+  ],
+  "balance-sheet-statement": [
+    {
+      "date": "2025-09-27",
+      "symbol": "AAPL",
+      "reportedCurrency": "USD",
+      "fiscalYear": "2025",
+      "period": "FY",
+      "cashAndCashEquivalents": 35934000000,
+      "shortTermInvestments": 18763000000,
+      "totalDebt": 112377000000,
+      "netDebt": 76443000000
+    }
+  ],
+  "income-statement": [
+    {
+      "date": "2025-09-27",
+      "symbol": "AAPL",
+      "reportedCurrency": "USD",
+      "fiscalYear": "2025",
+      "period": "FY",
+      "netIncome": 112010000000,
+      "weightedAverageShsOut": 14948500000,
+      "weightedAverageShsOutDil": 15004697000
+    }
+  ]
+}
