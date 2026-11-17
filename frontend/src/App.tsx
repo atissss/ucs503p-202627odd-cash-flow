@@ -7,6 +7,7 @@ import { ComparisonView } from './components/ComparisonView'
 import { LoginView } from './components/LoginView'
 import { ResultsView } from './components/ResultsView'
 import { ScenarioManager } from './components/ScenarioManager'
+import { SensitivityGrid } from './components/SensitivityGrid'
 import { runDCF } from './domain/runDCF'
 import { DEFAULT_ASSUMPTIONS, type Assumptions, type Scenario } from './domain/scenario'
 
@@ -133,6 +134,19 @@ function Workspace({
           <h2 className="text-sm font-medium tracking-wide text-ink-400 uppercase">Valuation</h2>
           <div className="mt-5">
             <ResultsView valuation={valuation} currency={assumptions.currency} />
+          </div>
+        </section>
+
+        <section className="rounded-xl border border-ink-800 bg-ink-900/60 p-6">
+          <h2 className="text-sm font-medium tracking-wide text-ink-400 uppercase">
+            Sensitivity
+          </h2>
+          <p className="mt-3 text-sm text-ink-400">
+            Intrinsic value per share across WACC and terminal growth, around your
+            current assumptions.
+          </p>
+          <div className="mt-5">
+            <SensitivityGrid assumptions={assumptions} />
           </div>
         </section>
 
