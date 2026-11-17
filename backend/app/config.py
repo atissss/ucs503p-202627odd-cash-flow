@@ -17,6 +17,13 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
     fmp_api_key: str = ""
     fmp_base_url: str = "https://financialmodelingprep.com/stable"
+    # Annual statements change rarely, and FMP's free tier allows 250 calls a day
+    # (three per lookup), so a day-long cache is the main rate-limit defence.
+    fmp_cache_ttl_seconds: int = 24 * 60 * 60
+    fmp_negative_cache_ttl_seconds: int = 60 * 60
+    fmp_stale_max_age_seconds: int = 7 * 24 * 60 * 60
+    fmp_cache_max_entries: int = 512
+    fmp_rate_limit_cooldown_seconds: int = 5 * 60
 
     @property
     def cors_origin_list(self) -> list[str]:

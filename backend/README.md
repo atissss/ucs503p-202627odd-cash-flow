@@ -50,15 +50,68 @@ guardrail is enforced server-side (`422`).
 | PUT      | `/api/scenarios/{id}` | `ScenarioUpdate` | `200`   |
 | DELETE   | `/api/scenarios/{id}` | —                | `204`   |
 
-**Financials** — requires a Bearer token. Returns `Assumptions` for a ticker from
-its latest annual Financial Modeling Prep statements, with monetary values and
-shares in millions. Free cash flow, net debt, diluted shares and currency are
-reported figures; `growth_rate`, `wacc`, `terminal_growth` and `projection_years`
-are placeholders for the user to set. Each lookup uses three provider calls.
+**Financials** — requires a Bearer token. Looks up a ticker's latest annual
+Financial Modeling Prep statements and returns them as `Assumptions`, with
+monetary values and shares in millions. Free cash flow (operating cash flow −
+capex), net debt (total debt − cash), diluted shares and currency are reported
+figures; `growth_rate`, `wacc`, `terminal_growth` and `projection_years` are
+placeholders for the user to set.
 
-| Method | Path                     | Success | Errors                                  |
-| ------ | ------------------------ | ------- | --------------------------------------- |
-| GET    | `/api/financials/{ticker}` | `200`   | `404` unknown ticker, `502` provider error |
+| Method | Path                       | Success | Body                 |
+| ------ | -------------------------- | ------- | -------------------- |
+| GET    | `/api/financials/{ticker}` | `200`   | `FinancialsResponse` |
+
+```json
+{
+  "ticker": "AAPL",
+  "data_status": "fetched",
+  "as_of": "2025-09-27",
+  "fetched_at": "2026-11-17T09:30:00Z",
+  "assumptions": { "base_free_cash_flow": 98767.0, "net_debt": 76443.0, "...": "..." },
+  "warnings": [{ "field": "base_free_cash_flow", "code": "zero_capex", "message": "..." }]
+}
+```
+
+- `data_status` is `fetched` (just pulled), `cached` (within the 24 h TTL) or
+  `stale` (past the TTL, served because the provider is failing; at most 7 days
+  old). `fetched_at` is when the provider was actually called.
+- `warnings` flag figures that passed validation but deserve a look:
+  `non_positive_fcf`, `zero_capex`, `zero_balance_sheet`, `implausible_shares`,
+  `mismatched_periods`, `outdated_statement`, `unknown_period`.
+
+Every error means "no live data — fall back to manual entry"; `error.code` says why:
+
+| Status | `error.code`              | Meaning                                                  |
+| ------ | ------------------------- | -------------------------------------------------------- |
+| `422`  | `invalid_ticker`          | Not a well-formed symbol (provider not called)           |
+| `404`  | `ticker_not_found`        | Provider has no statements for it                        |
+| `404`  | `ticker_not_covered`      | Not covered by our FMP plan (free tier: limited symbols) |
+| `502`  | `invalid_data`            | Missing / zero / malformed required figures              |
+| `502`  | `provider_error`          | Network failure, timeout, or provider error              |
+| `503`  | `rate_limited`            | Provider quota hit; see `Retry-After`                    |
+| `503`  | `provider_not_configured` | `INTRINSIC_FMP_API_KEY` is not set                       |
+
+**Rate limits.** The free FMP tier allows 250 calls/day and each uncached lookup
+costs 3 (one per statement; it stops at the first failure). Results are cached
+in-process per ticker for 24 h; unknown, uncovered and invalid tickers for 1 h;
+after a `429` the provider is not called for 5 min. All are tunable via
+`INTRINSIC_FMP_*` settings (see `.env.example`). The cache is per process, so it
+resets on restart.
+
+The response models live in `app/financials/schemas.py`, not `app/models.py`,
+since they are not part of the scenario contract. TS mirror for the frontend:
+
+```ts
+export interface DataWarning { field: string | null; code: string; message: string }
+export interface FinancialsResponse {
+  ticker: string
+  data_status: 'fetched' | 'cached' | 'stale'
+  as_of: string | null       // ISO date
+  fetched_at: string         // ISO datetime, UTC
+  assumptions: Assumptions   // snake_case on the wire
+  warnings: DataWarning[]
+}
+```
 
 ## Test & lint
 
@@ -80,7 +133,7 @@ ruff check .    # lint
 | `app/orm.py`               | `ScenarioTable`                                           |
 | `app/repository.py`        | Scenario DB access (create/get/list/update/delete)        |
 | `app/routers/scenarios.py` | Scenario CRUD endpoints (depend on `app.auth`)            |
-| `app/financials/service.py` | FMP fetch + transform to `Assumptions`                 |
+| `app/financials/`          | FMP client, transform + validation, TTL cache, schemas    |
 | `app/routers/financials.py` | Ticker lookup endpoint (depends on `app.auth`)          |
 | `app/models.py`            | Pydantic contract + request models — mirror of the TS     |
 | `tests/`                   | pytest (auth, scenarios, financials)                      |
