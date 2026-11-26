@@ -4,6 +4,7 @@ import { listScenarios } from './api/scenarios'
 import { useAuth } from './auth/useAuth'
 import { AssumptionsForm } from './components/AssumptionsForm'
 import { ComparisonView } from './components/ComparisonView'
+import { FcfProjectionChart } from './components/FcfProjectionChart'
 import { LoginView } from './components/LoginView'
 import { ResultsView } from './components/ResultsView'
 import { ScenarioManager } from './components/ScenarioManager'
@@ -131,7 +132,14 @@ function Workspace({
 
         <section className="rounded-xl border border-ink-800 bg-ink-900/60 p-6">
           <h2 className="text-sm font-medium tracking-wide text-ink-400 uppercase">Valuation</h2>
-          <div className="mt-5">
+          <div className="mt-5 flex flex-col gap-8">
+            <div className="flex justify-center">
+              <FcfProjectionChart
+                valuation={valuation}
+                assumptions={assumptions}
+                currency={assumptions.currency}
+              />
+            </div>
             <ResultsView valuation={valuation} currency={assumptions.currency} />
           </div>
         </section>
