@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { createScenario, deleteScenario } from '../api/scenarios'
 import type { Assumptions, Scenario, ScenarioKind, ValuationOutput } from '../domain/scenario'
-import { KINDS, kindBadge } from './scenarioStyles'
+import { KINDS, kindDot } from './scenarioStyles'
 
 interface ScenarioManagerProps {
   assumptions: Assumptions
@@ -90,7 +90,7 @@ export function ScenarioManager({
           type="button"
           onClick={() => void save()}
           disabled={busy || !name.trim()}
-          className="rounded-md bg-accent-400 px-4 py-1.5 text-sm font-medium text-ink-200 hover:bg-accent-500 disabled:opacity-40"
+          className="rounded-lg bg-brand-600 px-5 py-1.5 text-sm font-semibold text-white hover:bg-brand-500 disabled:opacity-40"
         >
           Save scenario
         </button>
@@ -106,9 +106,8 @@ export function ScenarioManager({
         <ul className="flex flex-col divide-y divide-ink-800 rounded-lg border border-ink-800">
           {scenarios.map((s) => (
             <li key={s.id} className="flex items-center gap-3 px-3 py-2">
-              <span
-                className={`rounded-full border px-2 py-0.5 text-xs capitalize ${kindBadge[s.kind]}`}
-              >
+              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-ink-300 capitalize">
+                <span className={`h-1.5 w-1.5 rounded-full ${kindDot[s.kind]}`} aria-hidden="true" />
                 {s.kind}
               </span>
               <span className="grow text-sm text-ink-200">{s.name}</span>
