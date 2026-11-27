@@ -1,4 +1,4 @@
-import { authHeaders, parseJson } from './http'
+import { apiUrl, authHeaders, parseJson } from './http'
 
 export interface AuthUser {
   id: string
@@ -14,7 +14,7 @@ const JSON_HEADERS = { 'Content-Type': 'application/json' }
 
 export async function register(email: string, password: string): Promise<AuthUser> {
   return parseJson<AuthUser>(
-    await fetch('/api/auth/register', {
+    await fetch(apiUrl('/api/auth/register'), {
       method: 'POST',
       headers: JSON_HEADERS,
       body: JSON.stringify({ email, password }),
@@ -24,7 +24,7 @@ export async function register(email: string, password: string): Promise<AuthUse
 
 export async function login(email: string, password: string): Promise<string> {
   const { access_token } = await parseJson<TokenResponse>(
-    await fetch('/api/auth/login', {
+    await fetch(apiUrl('/api/auth/login'), {
       method: 'POST',
       headers: JSON_HEADERS,
       body: JSON.stringify({ email, password }),
@@ -34,5 +34,5 @@ export async function login(email: string, password: string): Promise<string> {
 }
 
 export async function getMe(): Promise<AuthUser> {
-  return parseJson<AuthUser>(await fetch('/api/auth/me', { headers: authHeaders() }))
+  return parseJson<AuthUser>(await fetch(apiUrl('/api/auth/me'), { headers: authHeaders() }))
 }

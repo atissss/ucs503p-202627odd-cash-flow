@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import type { AuthUser } from './api/auth'
+import { apiUrl } from './api/http'
 import { listScenarios } from './api/scenarios'
 import { useAuth } from './auth/useAuth'
 import { AssumptionsForm } from './components/AssumptionsForm'
@@ -46,7 +47,7 @@ function useBackendHealth(): BackendState {
   const [state, setState] = useState<BackendState>('checking')
   useEffect(() => {
     const controller = new AbortController()
-    fetch('/api/health', { signal: controller.signal })
+    fetch(apiUrl('/api/health'), { signal: controller.signal })
       .then((res) => setState(res.ok ? 'online' : 'offline'))
       .catch(() => setState('offline'))
     return () => controller.abort()
