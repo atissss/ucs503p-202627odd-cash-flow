@@ -1,0 +1,19 @@
+# Render Blueprint — deploys the Intrinsic FastAPI backend.
+# Dashboard: New + → Blueprint → select this repo. Then set INTRINSIC_CORS_ORIGINS
+# (the one value marked sync:false) to your Vercel frontend URL.
+services:
+  - type: web
+    name: intrinsic-api
+    runtime: python
+    rootDir: backend
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.7
+      - key: INTRINSIC_SECRET_KEY
+        generateValue: true # Render generates a random secret
+      - key: INTRINSIC_CORS_ORIGINS
+        sync: false # set in the dashboard to https://<your-app>.vercel.app
