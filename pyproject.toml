@@ -42,5 +42,3 @@ pythonpath = [
 entrypoint = "backend.app.main:app"
 # THE END -------------------------------------------
 
-[tool.vercel]
-entrypoint = "backend.app.main:app"
