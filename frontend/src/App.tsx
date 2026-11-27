@@ -24,7 +24,12 @@ import { ResultsView } from './components/ResultsView'
 import { ScenarioManager } from './components/ScenarioManager'
 import { SensitivityGrid } from './components/SensitivityGrid'
 import { runDCF } from './domain/runDCF'
-import { buildSensitivity } from './domain/sensitivity'
+import {
+  buildSensitivity,
+  defaultTerminalRange,
+  defaultWaccRange,
+  valueExtent,
+} from './domain/sensitivity'
 import {
   DEFAULT_ASSUMPTIONS,
   type Assumptions,
@@ -452,7 +457,11 @@ function SensitivityView({
   valuation: ValuationOutput
   currency: CurrencyCode
 }) {
-  const { lo, hi } = buildSensitivity(assumptions)
+  const extent = valueExtent(
+    buildSensitivity(assumptions, defaultWaccRange(assumptions), defaultTerminalRange(assumptions)),
+  )
+  const lo = extent ? extent.min : null
+  const hi = extent ? extent.max : null
   const ok = valuation.status === 'ok'
   return (
     <>
@@ -467,27 +476,27 @@ function SensitivityView({
         <Metric
           title="Best case"
           icon={<ArrowUpRight />}
-          value={perShare(hi, currency)}
+          value={hi === null ? '—' : perShare(hi, currency)}
           caption="highest in the grid"
         />
         <Metric
           title="Worst case"
           icon={<ArrowDownRight />}
-          value={perShare(lo, currency)}
+          value={lo === null ? '—' : perShare(lo, currency)}
           caption="lowest in the grid"
         />
         <Metric
           title="Range"
           icon={<ArrowLeftRight />}
-          value={perShare(hi - lo, currency)}
+          value={lo === null || hi === null ? '—' : perShare(hi - lo, currency)}
           caption="best − worst"
         />
       </div>
       <Panel
         title="Sensitivity"
-        subtitle="Intrinsic value per share across a growth × WACC grid, centred on your inputs."
+        subtitle="Intrinsic value per share across a WACC × terminal-growth grid, centred on your inputs."
       >
-        <SensitivityGrid assumptions={assumptions} currency={currency} />
+        <SensitivityGrid assumptions={assumptions} />
       </Panel>
     </>
   )
