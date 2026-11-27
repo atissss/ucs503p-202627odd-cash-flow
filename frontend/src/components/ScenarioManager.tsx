@@ -90,7 +90,7 @@ export function ScenarioManager({
           type="button"
           onClick={() => void save()}
           disabled={busy || !name.trim()}
-          className="rounded-md bg-brand-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-40"
+          className="rounded-md bg-accent-400 px-4 py-1.5 text-sm font-medium text-ink-200 hover:bg-accent-500 disabled:opacity-40"
         >
           Save scenario
         </button>

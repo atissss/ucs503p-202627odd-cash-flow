@@ -45,6 +45,7 @@ export function FcfProjectionChart({ valuation, assumptions, currency }: FcfProj
   return (
     <PeakChart
       width={width}
+      accent="#ef6150"
       data={valuation.projection.map((p) => p.freeCashFlow)}
       labels={valuation.projection.map((p) => `Year ${p.year}`)}
       value={valuation.intrinsicValuePerShare}

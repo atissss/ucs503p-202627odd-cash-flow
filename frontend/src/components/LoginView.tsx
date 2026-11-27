@@ -37,7 +37,7 @@ export function LoginView({ onLogin, onRegister }: LoginViewProps) {
 
         <form
           onSubmit={submit}
-          className="flex flex-col gap-4 rounded-xl border border-ink-800 bg-ink-900/60 p-6"
+          className="flex flex-col gap-4 rounded-xl border border-ink-800 bg-ink-900 p-6 shadow-sm"
         >
           <h1 className="text-sm font-medium tracking-wide text-ink-400 uppercase">
             {mode === 'login' ? 'Sign in' : 'Create account'}
