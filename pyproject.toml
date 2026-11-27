@@ -37,5 +37,7 @@ Issues = "https://github.com/tiet-unc512/ucs503p-202627odd-template/issues"
 [tool.pytest.ini_options]
 pythonpath = [
   "code"
-]
+] 
+[tool.vercel]
+entrypoint = "backend.app.main:app"
 # THE END -------------------------------------------
