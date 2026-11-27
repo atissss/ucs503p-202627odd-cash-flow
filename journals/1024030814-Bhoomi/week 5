@@ -1,0 +1,110 @@
+# Week 5 — Live financial data: caching, validation & clean fallbacks
+
+## Goal
+Last week's `GET /api/financials/{ticker}` worked on the happy path but trusted the
+provider completely. This week: make it production-shaped.
+- **Cache with a TTL** so we stay inside FMP's free-tier rate limit.
+- **Validate** the figures: reject or flag missing, zero, or implausible values.
+- **Fall back cleanly**: unknown ticker or network failure gives a specific error,
+  so the UI can drop to manual entry.
+- **Agree the response JSON** with Bhavin, since he builds the UI against it.
+
+## Provider check (before coding)
+Re-confirmed FMP's free-tier limits from their pricing and docs pages:
+- **Basic (free) plan:** 250 calls/day, 5 years of history, and financial statements
+  have "Limited Coverage" (not every ticker is available).
+- **Fields:** `operatingCashFlow`, `capitalExpenditure` (negative), `reportedCurrency`
+  and `date` confirmed on the cash-flow statement docs. `limit` and `period` are
+  marked "Limited Access" on the free plan; we only use `limit=1`.
+- One uncached lookup = 3 calls (cash flow, balance sheet, income), so 250/day is
+  only about 80 lookups. That makes caching essential, not a nice-to-have.
+
+## What I did
+**Restructured `app/financials/` into focused modules:**
+- `client.py`: FMP HTTP calls only. Stops at the first failing statement, so a bad
+  ticker costs 1 call instead of 3. Maps HTTP 402 → "ticker not covered by plan" and
+  HTTP 429 → "rate limited".
+- `cache.py`: a small thread-safe TTL + LRU cache (FastAPI runs sync routes in a
+  thread pool, so it needs a lock).
+- `errors.py`: one exception per failure type (`InvalidTickerError`,
+  `TickerNotFoundError`, `TickerNotCoveredError`, `ProviderError`,
+  `RateLimitedError`, `ProviderNotConfiguredError`, `InvalidDataError`).
+- `schemas.py`: the response models.
+- `service.py`: transform + validation + caching logic.
+
+**Caching (all tunable via `INTRINSIC_FMP_*` settings, documented in `.env.example`):**
+- A successful lookup is cached per ticker for **24 h**. Annual statements barely change.
+- After the TTL, refetch. If FMP fails, serve the old result as **`stale`** for up to
+  **7 days** instead of an error.
+- Unknown / uncovered / invalid tickers are **negative-cached for 1 h**, so someone
+  retyping a bad ticker doesn't burn the daily quota.
+- After a **429**, stop calling FMP for **5 minutes** (a simple cooldown), and send
+  `Retry-After` to the client.
+- Malformed tickers (e.g. `AA PL`, `AAPL;DROP`) are rejected before any network call.
+
+**Validation:**
+- **Reject** (no data returned): any required figure missing, non-numeric, NaN, or a
+  boolean; zero operating cash flow; zero or negative share count; a malformed currency;
+  statements in different currencies. All problems are reported at once, not just the first.
+- **Flag as warnings** (data returned, but the UI can highlight it): negative free
+  cash flow, zero capex, debt and cash both zero, a share count outside 0.1M–100B
+  (likely a scaling error), the three statements covering different periods, and
+  statements older than 18 months.
+
+**Response shape (proposed to Bhavin):**
+`{ticker, data_status, as_of, fetched_at, assumptions, warnings[]}`
+- `data_status` is `fetched` | `cached` | `stale`, a subset of the `DataStatus` values
+  already in `scenario.ts`, so the UI can store it on the scenario directly.
+- `as_of` = the statement period end; `fetched_at` = when FMP was actually called.
+
+**Error codes:** added a small `ApiError` to `app/errors.py` so errors keep the
+shared envelope but carry a specific `code`:
+`invalid_ticker` (422), `ticker_not_found` / `ticker_not_covered` (404),
+`invalid_data` / `provider_error` (502), `rate_limited` / `provider_not_configured`
+(503). Any error = "no live data, use manual entry"; the code tells the UI what message to show.
+
+## Decisions
+- **Zero means missing.** FMP fills unreported fields with 0, so a zero where a real
+  company can't have one (operating cash flow, shares) is treated as missing data,
+  not a real value. Zero debt is legitimate, so it's only flagged when cash is also zero.
+- **Stale only for outages.** Stale data is served only on provider errors
+  (network, 5xx, 429), not when the data itself is invalid. I first tried serving
+  stale for invalid data too, but that clashed with negative caching (the second
+  request would get an error, the first stale data). Keeping the two separate gives
+  consistent behaviour.
+- **Response models outside `models.py`.** They live in `app/financials/schemas.py`
+  because they're not part of the scenario contract, so `models.py` still mirrors
+  `scenario.ts` exactly. I wrote the matching TS type in the backend README for Bhavin.
+- **In-process cache, not Redis/DB.** It's enough for one server and keeps the
+  project simple. Trade-off: the cache resets on restart.
+- **No new dependencies**, so `requirements.txt` is unchanged.
+
+## Problems & fixes
+- **FMP's docs blocked automated fetching (HTTP 403).** I confirmed the limits and
+  fields by reading the pricing and docs pages in a browser instead.
+- **Local Python 3.14 again:** sqlmodel 0.0.24 won't import on it, which blocks every
+  endpoint test. I ran the service tests alone (they don't need the DB layer), and the
+  full suite in a throwaway venv with newer library versions. The project pins stayed
+  unchanged, and CI on Python 3.12 confirmed them.
+- **Testability of time and network:** the cache takes an injectable clock and the
+  client has a swappable `transport`, so tests can "fast-forward" 24 h and fake FMP
+  without sleeping or real calls.
+
+## Verification
+- **Every test fakes FMP with `httpx.MockTransport`**, so CI needs no key and no network.
+- **Service tests (53):** transform numbers, each reject rule, each warning, malformed
+  vs valid tickers (`BRK-B`, `RELIANCE.NS`, `7203.T`), every provider error mapping,
+  cache hit / expiry / stale / stale-expiry, negative caching, the 429 cooldown, LRU
+  eviction, and the API key never appearing in logs or errors.
+- **Endpoint tests:** `200` with the full response shape, `cached` on the second call,
+  warnings in the body, each error code with the right status, the `Retry-After`
+  header, `401` without a token.
+- Locally: `ruff check .` clean, **88/88** tests passing.
+  CI green (backend + frontend) on commit `b44df7a`, PR #2.
+
+## Next (Week 6)
+- Get Bhavin's sign-off on the response shape (it's written up in PR #2), then
+  review + squash-merge.
+- A manual check with a real FMP key: confirm what FMP actually returns for a
+  ticker outside the free plan (the code assumes HTTP 402).
+- Possibly: a shared cache (DB table) if we deploy more than one server process.
