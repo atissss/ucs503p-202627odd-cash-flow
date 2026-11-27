@@ -1,4 +1,4 @@
-﻿
+
 [build-system]
 requires = ["hatchling","hatch-vcs"]
 build-backend = "hatchling.build"
@@ -41,3 +41,6 @@ pythonpath = [
 [tool.vercel]
 entrypoint = "backend.app.main:app"
 # THE END -------------------------------------------
+
+[tool.vercel]
+entrypoint = "backend.app.main:app"
