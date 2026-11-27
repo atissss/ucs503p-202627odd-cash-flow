@@ -1,5 +1,5 @@
 import type { CurrencyCode, Scenario } from '../domain/scenario'
-import { kindBadge, kindBar } from './scenarioStyles'
+import { kindBar, kindDot } from './scenarioStyles'
 
 interface ComparisonViewProps {
   scenarios: Scenario[]
@@ -49,9 +49,11 @@ export function ComparisonView({ scenarios, currency }: ComparisonViewProps) {
               {scenarios.map((s) => (
                 <th key={s.id} className="px-3 py-2">
                   <span className="flex items-center gap-2">
-                    <span
-                      className={`rounded-full border px-2 py-0.5 text-xs capitalize ${kindBadge[s.kind]}`}
-                    >
+                    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-ink-300 capitalize">
+                      <span
+                        className={`h-1.5 w-1.5 rounded-full ${kindDot[s.kind]}`}
+                        aria-hidden="true"
+                      />
                       {s.kind}
                     </span>
                     <span className="text-ink-200">{s.name}</span>

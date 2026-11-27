@@ -1,26 +1,36 @@
 @import 'tailwindcss';
 
 /*
- * Intrinsic — design tokens.
+ * Intrinsic — design tokens (warm "glass" scheme).
  * Tailwind v4 reads these `@theme` variables to generate utilities
- * (e.g. `bg-ink-950`, `text-brand-500`). Keep app-wide colours here so the
- * palette is defined in one place as the UI grows.
+ * (e.g. `bg-ink-950`, `text-brand-400`). Token *names* are kept stable so the
+ * components recolour automatically. The look: a warm cream background with
+ * frosted-glass panels, a dark primary, and a coral accent.
  */
 @theme {
-  --color-ink-950: #0b1120;
-  --color-ink-900: #0f172a;
-  --color-ink-800: #1e293b;
-  --color-ink-700: #334155;
-  --color-ink-400: #94a3b8;
-  --color-ink-200: #e2e8f0;
+  /* Surfaces — warm, light. */
+  --color-ink-950: #efe3d4; /* page base (warm cream) */
+  --color-ink-900: #fbf5ee; /* solid surface fallback */
+  --color-ink-800: #e3d4c3; /* borders / dividers */
+  --color-ink-700: #d6c4b0; /* input borders */
+  --color-ink-400: #7a695a; /* muted text (warm) */
+  --color-ink-300: #5c4c3f; /* secondary text */
+  --color-ink-200: #2a221e; /* headings / primary text (warm near-black) */
 
-  --color-brand-600: #0d9488;
-  --color-brand-500: #14b8a6;
-  --color-brand-400: #2dd4bf;
+  /* Primary = dark warm pill; accent (links, highlight values) = coral. */
+  --color-brand-600: #2a221e; /* primary button background */
+  --color-brand-500: #3a2f28; /* hover */
+  --color-brand-400: #a43c27; /* coral accent */
+
+  /* Legible error red on a warm surface. */
+  --color-red-400: #b23b2a;
 
   --font-sans:
-    'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto,
-    'Helvetica Neue', Arial, sans-serif;
+    'Manrope Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI',
+    Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-display:
+    'Bricolage Grotesque Variable', 'Manrope Variable', ui-sans-serif,
+    system-ui, sans-serif;
 }
 
 html,
@@ -31,8 +41,68 @@ body,
 
 body {
   margin: 0;
-  background-color: var(--color-ink-950);
+  background:
+    radial-gradient(1100px 700px at 12% -12%, #f8efe2, transparent 60%),
+    radial-gradient(1000px 720px at 102% -4%, #f1e1cf, transparent 55%),
+    radial-gradient(900px 800px at 85% 112%, #efe0cb, transparent 58%),
+    linear-gradient(180deg, #efe3d4, #e9dcc8);
+  background-attachment: fixed;
   color: var(--color-ink-200);
   font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
   -webkit-font-smoothing: antialiased;
+}
+
+/*
+ * Frosted-glass panel — translucent warm fill, rim highlights, soft shadow and
+ * a backdrop blur. Applied in place of a plain card background.
+ */
+.glass-panel {
+  border: 1px solid rgb(255 253 246 / 0.6);
+  border-radius: 20px;
+  background:
+    linear-gradient(144deg, rgb(255 251 245 / 0.5), transparent 66%),
+    rgb(250 242 232 / 0.55);
+  box-shadow:
+    inset 0 1px 1px rgb(255 254 247 / 0.84),
+    inset 0 -1px 1px rgb(57 40 28 / 0.12),
+    0 6px 18px rgb(35 21 14 / 0.08),
+    0 22px 60px -30px rgb(35 21 14 / 0.28);
+  backdrop-filter: blur(14px) saturate(1.3);
+  -webkit-backdrop-filter: blur(14px) saturate(1.3);
+}
+
+/* Frosted top bar. */
+.glass-top {
+  border-bottom: 1px solid rgb(255 253 246 / 0.5);
+  background: rgb(250 242 232 / 0.45);
+  box-shadow: inset 0 1px 0 rgb(255 254 247 / 0.7);
+  backdrop-filter: blur(16px) saturate(1.3);
+  -webkit-backdrop-filter: blur(16px) saturate(1.3);
+}
+
+/*
+ * Scroll reveal: elements rise and fade in as they enter the viewport. The
+ * `.in` class is added by the <Reveal> wrapper via IntersectionObserver.
+ */
+.reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition:
+    opacity 0.6s ease,
+    transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
+  will-change: opacity, transform;
+}
+
+.reveal.in {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
 }

@@ -9,7 +9,7 @@ interface ResultsViewProps {
 export function ResultsView({ valuation, currency }: ResultsViewProps) {
   if (valuation.status === 'invalid-assumptions') {
     return (
-      <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+      <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-700">
         Terminal growth must be less than WACC — adjust the assumptions to see
         a valuation.
       </div>
