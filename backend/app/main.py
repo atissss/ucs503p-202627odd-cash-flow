@@ -71,3 +71,11 @@ app.include_router(scenarios_router)
 def health() -> HealthResponse:
     """Liveness probe used by CI, the frontend shell, and deployment checks."""
     return HealthResponse(status="ok", service="intrinsic-api", version=__version__)
+    {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "build": {
+    "env": {
+      "PYTHONPATH": "."
+    }
+  }
+}
