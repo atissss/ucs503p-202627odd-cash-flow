@@ -2,9 +2,9 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
     {
-      "source": "/api/(.*)",
-      "destination": "https://ucs503p-202627odd-cash-flow.onrender.com/api/$1"
+      "source": "/api/:path*",
+      "destination": "https://ucs503p-202627odd-cash-flow.onrender.com/api/:path*"
     },
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "/:path*", "destination": "/index.html" }
   ]
 }
