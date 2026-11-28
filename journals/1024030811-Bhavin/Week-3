@@ -44,5 +44,3 @@ scenario storage plugs into — so the app stops being frontend-only.
 - Promote `owner_id` to a real foreign key; then the sensitivity grid and the
   live finance-data API.
 ```
-
-Want me to **write this to `journals/1024030811-Bhavin/week-05.md`** (and on which branch)? Given the file layout, I'd suggest putting it on `integration/backend` alongside the reconciliation, or on a fresh branch — your call. I won't commit or push unless you say so.
